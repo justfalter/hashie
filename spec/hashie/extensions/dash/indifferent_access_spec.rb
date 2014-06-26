@@ -12,6 +12,11 @@ describe Hashie::Extensions::Dash::IndifferentAccess do
     property :name
   end
 
+  class DeferredArrayDashWithIndifferentAccess < Hashie::Dash
+    include Hashie::Extensions::Dash::IndifferentAccess
+    property :some_array, default: proc { Array.new }
+  end
+
   context 'when included in Trash' do
     let(:params) { { per_page: '1', total_pages: 2 } }
     subject { TrashWithIndifferentAccess.new(params) }
@@ -29,6 +34,24 @@ describe Hashie::Extensions::Dash::IndifferentAccess do
     it 'extends with the patch once' do
       expect(patch).to receive(:extended).with(dash_class).once
       dash_class.send(:include, Hashie::Extensions::Dash::IndifferentAccess)
+    end
+  end
+
+  context 'reading from a deferred property that defaults to an Array' do
+    it 'evaluates proc after initial read' do
+      expect(DeferredArrayDashWithIndifferentAccess.new[:some_array]).to be_instance_of(Array)
+    end
+
+    it 'returns the same object after multiple reads' do
+      deferred = DeferredArrayDashWithIndifferentAccess.new
+      expect(deferred[:some_array].object_id).to eq deferred[:some_array].object_id
+    end
+
+    it 'two instances do not return the same object' do
+      deferred = DeferredArrayDashWithIndifferentAccess.new
+      deferred2 = DeferredArrayDashWithIndifferentAccess.new
+
+      expect(deferred[:some_array].object_id).not_to eq deferred2[:some_array].object_id
     end
   end
 

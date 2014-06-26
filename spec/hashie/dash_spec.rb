@@ -42,6 +42,10 @@ class DeferredTest < Hashie::Dash
   property :created_at, default: proc { Time.now }
 end
 
+class DeferredArrayTest < Hashie::Dash
+  property :some_array, default: proc { Array.new }
+end
+
 describe DashTest do
   def property_required_error(property)
     [ArgumentError, "The property '#{property}' is required for #{subject.class.name}."]
@@ -136,6 +140,24 @@ describe DashTest do
     it 'does not evalute proc after subsequent reads' do
       deferred = DeferredTest.new
       expect(deferred[:created_at].object_id).to eq deferred[:created_at].object_id
+    end
+  end
+
+  context 'reading from a deferred property that defaults to an Array' do
+    it 'evaluates proc after initial read' do
+      expect(DeferredArrayTest.new[:some_array]).to be_instance_of(Array)
+    end
+
+    it 'returns the same object after multiple reads' do
+      deferred = DeferredArrayTest.new
+      expect(deferred[:some_array].object_id).to eq deferred[:some_array].object_id
+    end
+
+    it 'two instances do not return the same object' do
+      deferred = DeferredArrayTest.new
+      deferred2 = DeferredArrayTest.new
+
+      expect(deferred[:some_array].object_id).not_to eq deferred2[:some_array].object_id
     end
   end
 
